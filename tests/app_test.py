@@ -78,7 +78,11 @@ def test_messages(client):
 
 def test_delete_message(client):
     """Ensure the messages are being deleted"""
-    rv = client.get('/delete/1')
+    rv = client.get("/delete/1")
+    data = json.loads(rv.data)
+    assert data["status"] == 0
+    login(client, app.config["USERNAME"], app.config["PASSWORD"])
+    rv = client.get("/delete/1")
     data = json.loads(rv.data)
     assert data["status"] == 1
 
@@ -107,3 +111,17 @@ def test_search(client):
     assert b"<strong>Example</strong> 1" in rv.data
     assert b"<strong>Example</strong> 2" in rv.data
     assert b"<strong>Example</strong> 3" not in rv.data
+
+def test_login_required(client):
+    """Ensure correct functionality of login required for deleting posts."""
+    logout(client)
+    rv = client.get("/delete/1")
+    data = json.loads(rv.data)
+    assert data["status"] == 0
+    assert data["message"] == 'Please log in.'
+    
+    login(client, app.config["USERNAME"], app.config["PASSWORD"])
+    rv = client.get("/delete/1")
+    data = json.loads(rv.data)
+    assert data["status"] == 1
+    assert data["message"] == 'Post Deleted'
